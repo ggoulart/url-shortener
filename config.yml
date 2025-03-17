@@ -1,0 +1,10 @@
+db:
+  HOST: "postgres_db"
+  PORT: "5432"
+  USER: "user"
+  PASS: "password"
+  NAME: "url_shortener"
+  SSL_MODE: "disable"
+
+service:
+  SHORTENER_HOST: "localhost:8080"
