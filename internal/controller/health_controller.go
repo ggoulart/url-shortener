@@ -8,7 +8,7 @@ import (
 )
 
 type HealthService interface {
-	Health(ctx context.Context) (map[string]bool, error)
+	Health(ctx context.Context) map[string]bool
 }
 
 type HealthController struct {
@@ -20,11 +20,7 @@ func NewHealthController(service HealthService) *HealthController {
 }
 
 func (h *HealthController) Health(ctx *gin.Context) {
-	health, err := h.service.Health(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	health := h.service.Health(ctx)
 
 	ctx.JSON(http.StatusOK, health)
 }

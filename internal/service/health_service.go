@@ -2,23 +2,23 @@ package service
 
 import "context"
 
-type DB interface {
+type DBClient interface {
 	Ping() error
 }
 
 type HealthService struct {
-	db DB
+	dbClient DBClient
 }
 
-func NewHealthService(db DB) *HealthService {
-	return &HealthService{db: db}
+func NewHealthService(dbClient DBClient) *HealthService {
+	return &HealthService{dbClient: dbClient}
 }
 
-func (s *HealthService) Health(ctx context.Context) (map[string]bool, error) {
+func (s *HealthService) Health(ctx context.Context) map[string]bool {
 	m := map[string]bool{}
 
-	err := s.db.Ping()
+	err := s.dbClient.Ping()
 	m["postgres"] = err == nil
 
-	return m, nil
+	return m
 }

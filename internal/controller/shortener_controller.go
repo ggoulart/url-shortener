@@ -46,6 +46,7 @@ func (c *ShortenerController) RetrieveURL(ctx *gin.Context) {
 	longURL, err := c.service.Retrieve(ctx, encodedKey)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	http.Redirect(ctx.Writer, ctx.Request, longURL.String(), http.StatusFound)
