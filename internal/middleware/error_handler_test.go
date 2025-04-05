@@ -28,7 +28,7 @@ func TestErrorHandler_Unit(t *testing.T) {
 		{
 			name:           "not found error",
 			errToAttach:    repository.ErrNotFound,
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusNotFound,
 			expectedBody:   `{"error":"` + repository.ErrNotFound.Error() + `"}`,
 		},
 		{

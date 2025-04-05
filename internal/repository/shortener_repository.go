@@ -49,7 +49,6 @@ func (r *ShortenerRepository) FindLongURL(ctx context.Context, encodedKey string
 	err := r.db.QueryRowContext(ctx, query, encodedKey).Scan(&dbLongURL)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			slog.Warn(fmt.Sprintf("encoded key %s not found: %v", encodedKey, err))
 			return url.URL{}, ErrNotFound
 		}
 

@@ -17,9 +17,10 @@ func ErrorHandler() gin.HandlerFunc {
 			var status int
 
 			switch {
-			case errors.Is(err.Err, controller.ErrBadRequest),
-				errors.Is(err.Err, repository.ErrNotFound):
+			case errors.Is(err.Err, controller.ErrBadRequest):
 				status = http.StatusBadRequest
+			case errors.Is(err.Err, repository.ErrNotFound):
+				status = http.StatusNotFound
 			default:
 				status = http.StatusInternalServerError
 			}
