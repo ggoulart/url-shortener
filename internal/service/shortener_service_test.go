@@ -25,6 +25,13 @@ func TestShortenerService_Shortener(t *testing.T) {
 			wantErr: errors.New("failed to find url"),
 		},
 		{
+			name: "when found url failed to be build",
+			setup: func(r *MockShortenerRepository) {
+				r.On("FindEncodedKey", context.Background(), "some-long-url").Return("\x07", nil)
+			},
+			wantErr: errors.New("failed to build short URL"),
+		},
+		{
 			name: "when successfully url already exists in db",
 			setup: func(r *MockShortenerRepository) {
 				r.On("FindEncodedKey", context.Background(), "some-long-url").Return("xZya7gG", nil)

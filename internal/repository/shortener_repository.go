@@ -5,8 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 )
+
+var ErrUnexpected = errors.New("unknown database error")
+var ErrNotFound = errors.New("record not found")
 
 type DB interface {
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
@@ -30,7 +34,9 @@ func (r *ShortenerRepository) FindEncodedKey(ctx context.Context, longURL string
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", nil
 		}
-		return "", fmt.Errorf("failed to find encoded key: %v", err)
+
+		slog.Error(fmt.Sprintf("failed to find encoded key: %v", err))
+		return "", ErrUnexpected
 	}
 
 	return encodedKey, nil
@@ -42,12 +48,19 @@ func (r *ShortenerRepository) FindLongURL(ctx context.Context, encodedKey string
 	var dbLongURL string
 	err := r.db.QueryRowContext(ctx, query, encodedKey).Scan(&dbLongURL)
 	if err != nil {
-		return url.URL{}, fmt.Errorf("failed to find longURL: %v", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			slog.Warn(fmt.Sprintf("encoded key %s not found: %v", encodedKey, err))
+			return url.URL{}, ErrNotFound
+		}
+
+		slog.Error(fmt.Sprintf("failed to find longURL: %v", err))
+		return url.URL{}, ErrUnexpected
 	}
 
 	longURL, err := url.Parse(dbLongURL)
 	if err != nil {
-		return url.URL{}, fmt.Errorf("failed to parse longURL: %v", err)
+		slog.Error(fmt.Sprintf("failed to parse longURL: %v", err))
+		return url.URL{}, ErrUnexpected
 	}
 
 	return *longURL, nil
@@ -58,7 +71,8 @@ func (r *ShortenerRepository) SaveURL(ctx context.Context, encodedKey string, lo
 
 	_, err := r.db.ExecContext(ctx, query, encodedKey, longURL)
 	if err != nil {
-		return fmt.Errorf("failed to insert url: %v", err)
+		slog.Error(fmt.Sprintf("failed to insert url: %v", err))
+		return ErrUnexpected
 	}
 
 	return nil

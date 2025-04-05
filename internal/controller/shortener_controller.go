@@ -2,12 +2,16 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 
 	"github.com/gin-gonic/gin"
 )
+
+var ErrBadRequest = errors.New("invalid body")
 
 type ShortenerService interface {
 	Shortener(ctx context.Context, longURL string) (url.URL, error)
@@ -26,14 +30,14 @@ func (c *ShortenerController) ShortenURL(ctx *gin.Context) {
 	var body ShortenerRequest
 	err := ctx.BindJSON(&body)
 	if err != nil {
-		e := fmt.Errorf("failed parse request body: %v", err.Error())
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": e.Error()})
+		slog.Warn(fmt.Sprintf("failed to parse body: %v", err))
+		ctx.Error(ErrBadRequest)
 		return
 	}
 
 	shortURL, err := c.service.Shortener(ctx, body.LongURL)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.Error(err)
 		return
 	}
 
@@ -45,7 +49,7 @@ func (c *ShortenerController) RetrieveURL(ctx *gin.Context) {
 
 	longURL, err := c.service.Retrieve(ctx, encodedKey)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.Error(err)
 		return
 	}
 

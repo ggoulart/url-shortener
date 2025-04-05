@@ -26,7 +26,7 @@ func TestShortenerRepository_FindEncodedKey(t *testing.T) {
 					WithArgs("a-long-url").
 					WillReturnError(errors.New("db error"))
 			},
-			wantErr: errors.New("failed to find encoded key: db error"),
+			wantErr: ErrUnexpected,
 		},
 		{
 			name: "when db has no long url",
@@ -73,13 +73,22 @@ func TestShortenerRepository_FindLongURL(t *testing.T) {
 		wantErr error
 	}{
 		{
+			name: "when no encoded key on db",
+			setup: func(s sqlmock.Sqlmock) {
+				s.ExpectQuery(regexp.QuoteMeta(`SELECT long_url FROM urls WHERE encoded_key = $1`)).
+					WithArgs("a-encoded-key").
+					WillReturnError(sql.ErrNoRows)
+			},
+			wantErr: ErrNotFound,
+		},
+		{
 			name: "when db failed",
 			setup: func(s sqlmock.Sqlmock) {
 				s.ExpectQuery(regexp.QuoteMeta(`SELECT long_url FROM urls WHERE encoded_key = $1`)).
 					WithArgs("a-encoded-key").
 					WillReturnError(errors.New("db error"))
 			},
-			wantErr: errors.New("failed to find longURL: db error"),
+			wantErr: ErrUnexpected,
 		},
 		{
 			name: "when db has invalid URL",
@@ -88,7 +97,7 @@ func TestShortenerRepository_FindLongURL(t *testing.T) {
 					WithArgs("a-encoded-key").
 					WillReturnRows(sqlmock.NewRows([]string{"long_url"}).AddRow("://missing-scheme.com"))
 			},
-			wantErr: errors.New(`failed to parse longURL: parse "://missing-scheme.com": missing protocol scheme`),
+			wantErr: ErrUnexpected,
 		},
 		{
 			name: "when successfully find longURL",
@@ -131,7 +140,7 @@ func TestShortenerRepository_SaveURL(t *testing.T) {
 					WithArgs("a-encoded-key", "a-long-url").
 					WillReturnError(errors.New("db error"))
 			},
-			wantErr: errors.New("failed to insert url: db error"),
+			wantErr: ErrUnexpected,
 		},
 		{
 			name: "when successfully save url",

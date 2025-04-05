@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 )
 
@@ -59,7 +61,8 @@ func (s *ShortenerService) Retrieve(ctx context.Context, encodedKey string) (url
 func (s *ShortenerService) buildShortURL(encodedKey string) (url.URL, error) {
 	shortURL, err := url.Parse(s.shortenerHost + "/" + encodedKey)
 	if err != nil {
-		return url.URL{}, fmt.Errorf("failed to build short URL: %w", err)
+		slog.Error(fmt.Sprintf("failed to build short URL: %v", err))
+		return url.URL{}, errors.New("failed to build short URL")
 	}
 
 	return *shortURL, nil

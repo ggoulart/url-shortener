@@ -22,13 +22,13 @@ func TestShortenerController_ShortURL(t *testing.T) {
 		setup                func(*MockShortenerService)
 		expectedStatusCode   int
 		expectedResponseBody string
+		expectedError        error
 	}{
 		{
-			name:                 "when failed to parse request body",
-			requestBody:          "{",
-			setup:                func(*MockShortenerService) {},
-			expectedStatusCode:   http.StatusBadRequest,
-			expectedResponseBody: `{"error":"failed parse request body: unexpected EOF"}`,
+			name:          "when failed to parse request body",
+			requestBody:   "{",
+			setup:         func(*MockShortenerService) {},
+			expectedError: ErrBadRequest,
 		},
 		{
 			name:        "when shortener service failed",
@@ -37,8 +37,7 @@ func TestShortenerController_ShortURL(t *testing.T) {
 				longURL := "https://bytebytego.com/courses/system-design-interview/design-a-url-shortener"
 				m.On("Shortener", mock.AnythingOfType("*gin.Context"), longURL).Return(url.URL{}, errors.New("shortener service failed"))
 			},
-			expectedStatusCode:   http.StatusInternalServerError,
-			expectedResponseBody: `{"error":"shortener service failed"}`,
+			expectedError: errors.New("shortener service failed"),
 		},
 		{
 			name:        "when successfuly shortens url",
@@ -67,34 +66,38 @@ func TestShortenerController_ShortURL(t *testing.T) {
 
 			c.ShortenURL(ctx)
 
-			assert.Equal(t, tt.expectedStatusCode, recorder.Code)
-			assert.Equal(t, tt.expectedResponseBody, recorder.Body.String())
+			if tt.expectedError != nil {
+				assert.Equal(t, tt.expectedError.Error(), ctx.Errors[len(ctx.Errors)-1].Error())
+			} else {
+				assert.Equal(t, tt.expectedStatusCode, recorder.Code)
+				assert.Equal(t, tt.expectedResponseBody, recorder.Body.String())
+			}
 		})
 	}
 }
 
 func TestShortenerController_RetrieveURL(t *testing.T) {
 	tests := []struct {
-		name                 string
-		setup                func(*MockShortenerService)
-		expectedStatusCode   int
-		expectedResponseBody string
-		expectedRedirectURL  string
+		name                string
+		setup               func(*MockShortenerService)
+		expectedStatusCode  int
+		expectedRedirectURL string
+		expectedError       error
 	}{
 		{
 			name: "when failed to retrieve url",
 			setup: func(m *MockShortenerService) {
 				m.On("Retrieve", mock.AnythingOfType("*gin.Context"), "NGVmMjk").Return(url.URL{}, errors.New("shortener service failed"))
 			},
-			expectedStatusCode:   http.StatusInternalServerError,
-			expectedResponseBody: `{"error":"shortener service failed"}`,
+			expectedError: errors.New("shortener service failed"),
 		},
 		{
 			name: "when successfully retrieves url",
 			setup: func(m *MockShortenerService) {
 				m.On("Retrieve", mock.AnythingOfType("*gin.Context"), "NGVmMjk").Return(url.URL{Host: "some-url"}, nil)
 			},
-			expectedStatusCode: http.StatusFound,
+			expectedStatusCode:  http.StatusFound,
+			expectedRedirectURL: "//some-url",
 		},
 	}
 	for _, tt := range tests {
@@ -113,9 +116,10 @@ func TestShortenerController_RetrieveURL(t *testing.T) {
 
 			ctx.Writer.WriteHeaderNow()
 
-			assert.Equal(t, tt.expectedStatusCode, recorder.Code)
-			assert.Equal(t, tt.expectedResponseBody, recorder.Body.String())
-			if tt.expectedRedirectURL != "" {
+			if tt.expectedError != nil {
+				assert.Equal(t, tt.expectedError.Error(), ctx.Errors[len(ctx.Errors)-1].Error())
+			} else {
+				assert.Equal(t, tt.expectedStatusCode, recorder.Code)
 				assert.Equal(t, tt.expectedRedirectURL, recorder.Header().Get("Location"))
 			}
 		})

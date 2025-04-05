@@ -6,6 +6,7 @@ import (
 
 	"github.com/ggoulart/url-shortener/internal/clients/postgres"
 	"github.com/ggoulart/url-shortener/internal/controller"
+	"github.com/ggoulart/url-shortener/internal/middleware"
 	"github.com/ggoulart/url-shortener/internal/repository"
 	"github.com/ggoulart/url-shortener/internal/service"
 	"github.com/gin-gonic/gin"
@@ -47,7 +48,7 @@ func main() {
 func loadConfigs() (error, string) {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath("./configs")
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Panic(fmt.Errorf("failed to load config file: %s", err))
@@ -58,6 +59,8 @@ func loadConfigs() (error, string) {
 }
 
 func routes(r *gin.Engine, shortenerController *controller.ShortenerController, healthController *controller.HealthController) {
+	r.Use(middleware.ErrorHandler())
+
 	r.POST("/api/v1/shorten", shortenerController.ShortenURL)
 	r.GET("/api/v1/:encodedKey", shortenerController.RetrieveURL)
 	r.GET("/api/v1/health", healthController.Health)
