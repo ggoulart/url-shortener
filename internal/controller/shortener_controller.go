@@ -14,7 +14,7 @@ import (
 var ErrBadRequest = errors.New("invalid body")
 
 type ShortenerService interface {
-	Shortener(ctx context.Context, longURL string) (url.URL, error)
+	Shortener(ctx context.Context, longURL url.URL) (url.URL, error)
 	Retrieve(ctx context.Context, encodedKey string) (url.URL, error)
 }
 
@@ -35,7 +35,14 @@ func (c *ShortenerController) ShortenURL(ctx *gin.Context) {
 		return
 	}
 
-	shortURL, err := c.service.Shortener(ctx, body.LongURL)
+	longURL, err := url.ParseRequestURI(body.LongURL)
+	if err != nil {
+		slog.Warn(fmt.Sprintf("failed to parse url: %v", err))
+		ctx.Error(ErrBadRequest)
+		return
+	}
+
+	shortURL, err := c.service.Shortener(ctx, *longURL)
 	if err != nil {
 		ctx.Error(err)
 		return

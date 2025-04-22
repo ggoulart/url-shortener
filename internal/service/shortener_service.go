@@ -10,9 +10,9 @@ import (
 )
 
 type ShortenerRepository interface {
-	FindEncodedKey(ctx context.Context, longURL string) (string, error)
+	FindEncodedKey(ctx context.Context, longURL url.URL) (string, error)
 	FindLongURL(ctx context.Context, encodedKey string) (url.URL, error)
-	SaveURL(ctx context.Context, shortURL string, longURL string) error
+	SaveURL(ctx context.Context, shortURL string, longURL url.URL) error
 }
 
 type ShortenerService struct {
@@ -25,7 +25,7 @@ func NewShortenerService(repository ShortenerRepository, shortenerHost string, u
 	return &ShortenerService{repository: repository, shortenerHost: shortenerHost, uuidGenerator: uuidGenerator}
 }
 
-func (s *ShortenerService) Shortener(ctx context.Context, longURL string) (url.URL, error) {
+func (s *ShortenerService) Shortener(ctx context.Context, longURL url.URL) (url.URL, error) {
 	encodedKey, err := s.repository.FindEncodedKey(ctx, longURL)
 	if err != nil {
 		return url.URL{}, err
@@ -59,7 +59,7 @@ func (s *ShortenerService) Retrieve(ctx context.Context, encodedKey string) (url
 }
 
 func (s *ShortenerService) buildShortURL(encodedKey string) (url.URL, error) {
-	shortURL, err := url.Parse(s.shortenerHost + "/" + encodedKey)
+	shortURL, err := url.Parse(s.shortenerHost + "/api/v1/" + encodedKey)
 	if err != nil {
 		slog.Error(fmt.Sprintf("failed to build short URL: %v", err))
 		return url.URL{}, errors.New("failed to build short URL")

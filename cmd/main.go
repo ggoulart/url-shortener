@@ -9,6 +9,7 @@ import (
 	"github.com/ggoulart/url-shortener/internal/middleware"
 	"github.com/ggoulart/url-shortener/internal/repository"
 	"github.com/ggoulart/url-shortener/internal/service"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
@@ -59,6 +60,12 @@ func loadConfigs() (error, string) {
 }
 
 func routes(r *gin.Engine, shortenerController *controller.ShortenerController, healthController *controller.HealthController) {
+	r.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"http://localhost:5173"},
+		AllowMethods: []string{"GET", "POST"},
+		AllowHeaders: []string{"Origin", "Content-Type"},
+	}))
+
 	r.Use(middleware.ErrorHandler())
 
 	r.POST("/api/v1/shorten", shortenerController.ShortenURL)

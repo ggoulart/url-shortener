@@ -20,39 +20,39 @@ func TestShortenerService_Shortener(t *testing.T) {
 		{
 			name: "when failed to findURL",
 			setup: func(r *MockShortenerRepository) {
-				r.On("FindEncodedKey", context.Background(), "some-long-url").Return("", errors.New("failed to find url"))
+				r.On("FindEncodedKey", context.Background(), url.URL{Scheme: "http", Host: "some-long-url"}).Return("", errors.New("failed to find url"))
 			},
 			wantErr: errors.New("failed to find url"),
 		},
 		{
 			name: "when found url failed to be build",
 			setup: func(r *MockShortenerRepository) {
-				r.On("FindEncodedKey", context.Background(), "some-long-url").Return("\x07", nil)
+				r.On("FindEncodedKey", context.Background(), url.URL{Scheme: "http", Host: "some-long-url"}).Return("\x07", nil)
 			},
 			wantErr: errors.New("failed to build short URL"),
 		},
 		{
 			name: "when successfully url already exists in db",
 			setup: func(r *MockShortenerRepository) {
-				r.On("FindEncodedKey", context.Background(), "some-long-url").Return("xZya7gG", nil)
+				r.On("FindEncodedKey", context.Background(), url.URL{Scheme: "http", Host: "some-long-url"}).Return("xZya7gG", nil)
 			},
-			want: url.URL{Scheme: "http", Host: "host-url.com", Path: "/xZya7gG"},
+			want: url.URL{Scheme: "http", Host: "host-url.com", Path: "/api/v1/xZya7gG"},
 		},
 		{
 			name: "when failed to save",
 			setup: func(r *MockShortenerRepository) {
-				r.On("FindEncodedKey", context.Background(), "some-long-url").Return("", nil)
-				r.On("SaveURL", context.Background(), mock.Anything, "some-long-url").Return(errors.New("failed to save"))
+				r.On("FindEncodedKey", context.Background(), url.URL{Scheme: "http", Host: "some-long-url"}).Return("", nil)
+				r.On("SaveURL", context.Background(), mock.Anything, url.URL{Scheme: "http", Host: "some-long-url"}).Return(errors.New("failed to save"))
 			},
 			wantErr: errors.New("failed to save"),
 		},
 		{
 			name: "when successfully create shortURL and save it",
 			setup: func(r *MockShortenerRepository) {
-				r.On("FindEncodedKey", context.Background(), "some-long-url").Return("", nil)
-				r.On("SaveURL", context.Background(), mock.Anything, "some-long-url").Return(nil)
+				r.On("FindEncodedKey", context.Background(), url.URL{Scheme: "http", Host: "some-long-url"}).Return("", nil)
+				r.On("SaveURL", context.Background(), mock.Anything, url.URL{Scheme: "http", Host: "some-long-url"}).Return(nil)
 			},
-			want: url.URL{Scheme: "http", Host: "host-url.com", Path: "/cmFuZG9"},
+			want: url.URL{Scheme: "http", Host: "host-url.com", Path: "/api/v1/cmFuZG9"},
 		},
 	}
 	for _, tt := range tests {
@@ -63,7 +63,7 @@ func TestShortenerService_Shortener(t *testing.T) {
 			})
 			tt.setup(r)
 
-			got, err := s.Shortener(context.Background(), "some-long-url")
+			got, err := s.Shortener(context.Background(), url.URL{Scheme: "http", Host: "some-long-url"})
 
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.wantErr, err)
@@ -111,7 +111,7 @@ type MockShortenerRepository struct {
 	mock.Mock
 }
 
-func (m *MockShortenerRepository) FindEncodedKey(ctx context.Context, longURL string) (string, error) {
+func (m *MockShortenerRepository) FindEncodedKey(ctx context.Context, longURL url.URL) (string, error) {
 	args := m.Called(ctx, longURL)
 	return args.String(0), args.Error(1)
 }
@@ -121,7 +121,7 @@ func (m *MockShortenerRepository) FindLongURL(ctx context.Context, encodedKey st
 	return args.Get(0).(url.URL), args.Error(1)
 }
 
-func (m *MockShortenerRepository) SaveURL(ctx context.Context, shortURL string, longURL string) error {
+func (m *MockShortenerRepository) SaveURL(ctx context.Context, shortURL string, longURL url.URL) error {
 	args := m.Called(ctx, shortURL, longURL)
 	return args.Error(0)
 }

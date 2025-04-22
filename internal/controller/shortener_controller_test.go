@@ -34,7 +34,7 @@ func TestShortenerController_ShortURL(t *testing.T) {
 			name:        "when shortener service failed",
 			requestBody: `{"longUrl": "https://bytebytego.com/courses/system-design-interview/design-a-url-shortener"}`,
 			setup: func(m *MockShortenerService) {
-				longURL := "https://bytebytego.com/courses/system-design-interview/design-a-url-shortener"
+				longURL := url.URL{Scheme: "https", Host: "bytebytego.com", Path: "/courses/system-design-interview/design-a-url-shortener"}
 				m.On("Shortener", mock.AnythingOfType("*gin.Context"), longURL).Return(url.URL{}, errors.New("shortener service failed"))
 			},
 			expectedError: errors.New("shortener service failed"),
@@ -43,7 +43,7 @@ func TestShortenerController_ShortURL(t *testing.T) {
 			name:        "when successfuly shortens url",
 			requestBody: `{"longUrl": "https://bytebytego.com/courses/system-design-interview/design-a-url-shortener"}`,
 			setup: func(m *MockShortenerService) {
-				longURL := "https://bytebytego.com/courses/system-design-interview/design-a-url-shortener"
+				longURL := url.URL{Scheme: "https", Host: "bytebytego.com", Path: "/courses/system-design-interview/design-a-url-shortener"}
 				shortenURL, _ := url.Parse("https://gg.com/shorten")
 				m.On("Shortener", mock.AnythingOfType("*gin.Context"), longURL).Return(*shortenURL, nil)
 			},
@@ -135,7 +135,7 @@ func (s *MockShortenerService) Retrieve(ctx context.Context, encodedKey string) 
 	return args.Get(0).(url.URL), args.Error(1)
 }
 
-func (s *MockShortenerService) Shortener(ctx context.Context, shortURL string) (url.URL, error) {
+func (s *MockShortenerService) Shortener(ctx context.Context, shortURL url.URL) (url.URL, error) {
 	args := s.Called(ctx, shortURL)
 	return args.Get(0).(url.URL), args.Error(1)
 }

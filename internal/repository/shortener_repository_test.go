@@ -32,7 +32,7 @@ func TestShortenerRepository_FindEncodedKey(t *testing.T) {
 			name: "when db has no long url",
 			setup: func(s sqlmock.Sqlmock) {
 				s.ExpectQuery(regexp.QuoteMeta(`SELECT encoded_key FROM urls WHERE long_url = $1`)).
-					WithArgs("a-long-url").
+					WithArgs("http://a-long-url").
 					WillReturnError(sql.ErrNoRows)
 			},
 		},
@@ -41,7 +41,7 @@ func TestShortenerRepository_FindEncodedKey(t *testing.T) {
 			setup: func(s sqlmock.Sqlmock) {
 				row := sqlmock.NewRows([]string{"encoded_key"}).AddRow("a-encoded-key")
 				s.ExpectQuery(regexp.QuoteMeta(`SELECT encoded_key FROM urls WHERE long_url = $1`)).
-					WithArgs("a-long-url").
+					WithArgs("http://a-long-url").
 					WillReturnRows(row)
 			},
 			want: "a-encoded-key",
@@ -57,7 +57,7 @@ func TestShortenerRepository_FindEncodedKey(t *testing.T) {
 
 			r := NewShortenerRepository(db)
 
-			got, err := r.FindEncodedKey(context.Background(), "a-long-url")
+			got, err := r.FindEncodedKey(context.Background(), url.URL{Scheme: "http", Host: "a-long-url"})
 
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.wantErr, err)
@@ -146,7 +146,7 @@ func TestShortenerRepository_SaveURL(t *testing.T) {
 			name: "when successfully save url",
 			setup: func(s sqlmock.Sqlmock) {
 				s.ExpectExec(regexp.QuoteMeta(`INSERT INTO urls (encoded_key, long_url) VALUES ($1, $2)`)).
-					WithArgs("a-encoded-key", "a-long-url").
+					WithArgs("a-encoded-key", "http://a-long-url").
 					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 		},
@@ -161,7 +161,7 @@ func TestShortenerRepository_SaveURL(t *testing.T) {
 
 			r := NewShortenerRepository(db)
 
-			got := r.SaveURL(context.Background(), "a-encoded-key", "a-long-url")
+			got := r.SaveURL(context.Background(), "a-encoded-key", url.URL{Scheme: "http", Host: "a-long-url"})
 
 			assert.Equal(t, tt.wantErr, got)
 		})

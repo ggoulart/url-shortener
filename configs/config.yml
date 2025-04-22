@@ -7,4 +7,4 @@ db:
   SSL_MODE: "disable"
 
 service:
-  SHORTENER_HOST: "localhost:8080"
+  SHORTENER_HOST: "http://localhost:8080"

@@ -25,11 +25,11 @@ func NewShortenerRepository(db DB) *ShortenerRepository {
 	return &ShortenerRepository{db: db}
 }
 
-func (r *ShortenerRepository) FindEncodedKey(ctx context.Context, longURL string) (string, error) {
+func (r *ShortenerRepository) FindEncodedKey(ctx context.Context, longURL url.URL) (string, error) {
 	query := `SELECT encoded_key FROM urls WHERE long_url = $1`
 
 	var encodedKey string
-	err := r.db.QueryRowContext(ctx, query, longURL).Scan(&encodedKey)
+	err := r.db.QueryRowContext(ctx, query, longURL.String()).Scan(&encodedKey)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", nil
@@ -65,10 +65,10 @@ func (r *ShortenerRepository) FindLongURL(ctx context.Context, encodedKey string
 	return *longURL, nil
 }
 
-func (r *ShortenerRepository) SaveURL(ctx context.Context, encodedKey string, longURL string) error {
+func (r *ShortenerRepository) SaveURL(ctx context.Context, encodedKey string, longURL url.URL) error {
 	query := `INSERT INTO urls (encoded_key, long_url) VALUES ($1, $2)`
 
-	_, err := r.db.ExecContext(ctx, query, encodedKey, longURL)
+	_, err := r.db.ExecContext(ctx, query, encodedKey, longURL.String())
 	if err != nil {
 		slog.Error(fmt.Sprintf("failed to insert url: %v", err))
 		return ErrUnexpected
